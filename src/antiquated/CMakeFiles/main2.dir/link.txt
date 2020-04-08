@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/main2.dir/main.cpp.o CMakeFiles/main2.dir/Weights.cpp.o CMakeFiles/main2.dir/Individuals.cpp.o CMakeFiles/main2.dir/Genotypes.cpp.o  -o main2 -Wl,-rpath,/usr/local/lib: /net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/cget/lib/libsavvy.a /usr/local/lib/libhts.so /usr/lib/x86_64-linux-gnu/libz.a -lpthread 

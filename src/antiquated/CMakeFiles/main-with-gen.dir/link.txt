@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/main-with-gen.dir/main-with-gen.cpp.o CMakeFiles/main-with-gen.dir/Weights.cpp.o CMakeFiles/main-with-gen.dir/Individuals.cpp.o  -o main-with-gen -Wl,-rpath,/usr/local/lib: /net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/cget/lib/libsavvy.a /usr/local/lib/libhts.so /usr/lib/x86_64-linux-gnu/libz.a -lpthread 
