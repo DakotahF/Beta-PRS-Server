@@ -1,0 +1,7 @@
+#!/bin/bash
+#SBATCH --job-name test-static
+#SBATCH --mail-user=kotah@umich.edu
+#SBATCH --mail-type=END,FAIL,BEGIN,NONE
+
+./main
+
