@@ -86,7 +86,8 @@ int main(int argc, char* argv[]) {
     unsigned int iid_count,pos,var;
     std::vector<double> dosages;
     std::string chr,ea,oa; 
-    try { 
+    try 
+    { 
         Genotypes genotypes(dosage_file);
         std::vector<std::string> indiv_iids;
         if (verbose_flag)  
@@ -100,42 +101,36 @@ int main(int argc, char* argv[]) {
         iid_count = genotypes.get_selected_samples().size();
         Individual_scores scores(weights.num_weights, iid_count);
         scores.IIDs = genotypes.get_selected_samples();
-    } 
+
+        var = 0;
+        for(Row w_row : weights.rows){
+            ea = w_row.alt;
+            oa = w_row.ref;
+            chr = w_row.chr;
+            pos = w_row.pos;
+
+    	if(var % 10000 == 0) 
+                std::cout << "Processed " << var << " rows from weight_file" << '\n';
+            int it = 0;
+            dosages = genotypes.read_variant(chr,pos,ea,oa);
+            var++;
+            if(dosages.size() == 0)
+                continue;
+            double weight = 0.00;
+            while(it < weights.num_weights){
+                std::vector<double> prs_vec;
+                weight = w_row.weights[it]; 
+                prs_vec = calculate_prs(weight,dosages);
+                std::transform(scores.scores[it].begin(),scores.scores[it].end(),prs_vec.begin(),scores.scores[it].begin(), std::plus<double>());
+                it++;
+            }
+        }
+       if (verbose_flag)
+            std::cout << "Printing results to " << output_file << '\n'; 
+       populate_ofile(output_file, scores); 
+    }
     catch(const char* msg) { 
         std::cerr << msg << '\n';
         exit(1);  
     } 
-
-    var = 0;
-    for(Row w_row : weights.rows){
-        ea = w_row.alt;
-        oa = w_row.ref;
-        chr = w_row.chr;
-        pos = w_row.pos;
-
-	if(var % 10000 == 0) 
-            std::cout << "Processed " << var << " rows from weight_file" << '\n';
-        int it = 0;
-        dosages = genotypes.read_variant(chr,pos,ea,oa);
-        var++;
-        if(dosages.size() == 0)
-            continue;
-        double weight = 0.00;
-        while(it < weights.num_weights){
-            std::vector<double> prs_vec;
-            weight = w_row.weights[it];
-            try { 
-            	prs_vec = calculate_prs(weight,dosages);
-            } 
-            catch(const char* msg) {
-                std::cerr << msg << '\n'; 
-                exit(1); 
-            } 
-            std::transform(scores.scores[it].begin(),scores.scores[it].end(),prs_vec.begin(),scores.scores[it].begin(), std::plus<double>());
-            it++;
-        }
-    }
-   if (verbose_flag)
-        std::cout << "Printing results to " << output_file << '\n'; 
-   populate_ofile(output_file, scores); 
 }
