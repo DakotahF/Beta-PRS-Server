@@ -11,32 +11,6 @@
 #include <getopt.h>
 #include <stdio.h>
 
-/*void print_vec(std::vector<double> vec)
-{ //fixme, remove me when cleaning or template and place with other helper functions
-   if(vec.size() == 0) 
-	return; 
-   for(const auto &i:vec) {
-        std::cout << i << ' ';
-    }
-    std::cout << '\n';
-    return;
-}
-
-void print_vec_string(std::vector<std::string> vec, int max)
-{ //fixme, remove me when cleaning or template and place with other helper functions
-   if(vec.size() == 0)
-        return; 
-   int counter = 0; 
-   for(const auto &i:vec) {
-        std::cout << i << ' ';
-	if(counter > max)
-	    break;
-	counter++;
-    }
-    std::cout << '\n';
-    return;
-}*/
-
 void populate_ofile(std::string file_name, Individual_scores indivs) { 
      std::ofstream txt_out; 
      txt_out.open(file_name);
@@ -128,7 +102,8 @@ int main(int argc, char* argv[]) {
         scores.IIDs = genotypes.get_selected_samples();
     } 
     catch(const char* msg) { 
-        std::cerr << msg << '\n'; 
+        std::cerr << msg << '\n';
+        exit(1);  
     } 
 
     var = 0;
@@ -154,6 +129,7 @@ int main(int argc, char* argv[]) {
             } 
             catch(const char* msg) {
                 std::cerr << msg << '\n'; 
+                exit(1); 
             } 
             std::transform(scores.scores[it].begin(),scores.scores[it].end(),prs_vec.begin(),scores.scores[it].begin(), std::plus<double>());
             it++;
