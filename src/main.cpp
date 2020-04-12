@@ -11,7 +11,7 @@
 #include <getopt.h>
 #include <stdio.h>
 
-void print_vec(std::vector<double> vec)
+/*void print_vec(std::vector<double> vec)
 { //fixme, remove me when cleaning or template and place with other helper functions
    if(vec.size() == 0) 
 	return; 
@@ -35,26 +35,9 @@ void print_vec_string(std::vector<std::string> vec, int max)
     }
     std::cout << '\n';
     return;
-}
+}*/
 
-template <typename T> 
-void populate_ofile(std::string file_name,std::vector<T> data){
-    std::ofstream txt_out; 
-    txt_out.open(file_name,std::fstream::app);
-    int len = data.size(); 
-    int counter = 0; 
-    for(const auto &i:data) { 
-    	txt_out << i; 
-        if(counter != (len - 1))
-	    txt_out << '\t';
-        counter++;
-    }
-    txt_out << '\n';
-    txt_out.close();
-    return; 
-}
-
-void print_prs(std::string file_name, Individual_scores indivs) { 
+void populate_ofile(std::string file_name, Individual_scores indivs) { 
      std::ofstream txt_out; 
      txt_out.open(file_name);
      for(int idx=0; idx < indivs.IIDs.size(); idx++) {
@@ -176,5 +159,7 @@ int main(int argc, char* argv[]) {
             it++;
         }
     }
-   print_prs(output_file, scores); 
+   if (verbose_flag)
+        std::cout << "Printing results to " << output_file << '\n'; 
+   populate_ofile(output_file, scores); 
 }

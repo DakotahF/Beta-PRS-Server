@@ -10,7 +10,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "Options.h"
+#include "weight-formatter/Options.h"
 //#include <experimental/filesystem>   
 
 //REQUIRES c++11
