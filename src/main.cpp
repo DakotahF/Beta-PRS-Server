@@ -74,23 +74,26 @@ void print_prs(std::string file_name, Individual_scores indivs) {
 
 
 int main(int argc, char* argv[]) {
-    std::string weight, dosage, out;
+    std::string weight_file, dosage_file, output_file;
     int verbose_flag = 0;
     int c;  
+
     while(1) 
     {
         static struct option long_options[] =  
         {
             {"verbose", no_argument, &verbose_flag, 1},
-            {"weight", required_argument, 0, 'w'},
-            {"dosage", required_argument, 0, 'd'},
-            {"output", required_argument, 0, 'o'}
+            {"weight", required_argument,	0, 'w'},
+            {"dosage", required_argument,	0, 'd'},
+            {"output", required_argument,	0, 'o'}
         };
 
         int option_index = 0; 
         c  = getopt_long(argc, argv, "w:d:o:", long_options, &option_index); 
+
         if (c == -1) 
             break; 
+        
         switch(c) 
         {
             case 0: 
@@ -100,70 +103,78 @@ int main(int argc, char* argv[]) {
                 if(optarg)
                     printf(" with arg %s", optarg);
                 printf("\n");
+                break; 
             case 'w':
-                weight = optarg; 
+                weight_file = optarg;
+                std::cout << weight_file << '\n';
+                break;  
             case 'd':
-                dosage = optarg; 
+                dosage_file = optarg; 
+                std::cout << dosage_file << '\n';
+                break;  
             case 'o': 
-                out = optarg; 
+                output_file = optarg; 
+                std::cout << output_file << '\n';
+                break;  
             default: 
+                std::cout << "enters default and exits \n"; 
                 exit(0);  
         }
     }
-    //std::string filename = "/net/hunt/home/kotah/prs-server-beta/plink-weights/raw/PRS_weights_PheCode_X626.8_SAIGE_b38_5e-2_clumped_r2_0.2.chr16.clumped.cleaned.sorted";
-    std::string filename = "/net/hunt/home/kotah/prs-server-beta/plink-weights/raw/PRS_weights_PheCode_X626.8_SAIGE_b38_5e-2_clumped_r2_0.2.clumped.cleaned.head10000.sorted";
-    //std::string genotype_f = "/net/hunt/home/kotah/prs-server-beta/imputation/imp-server-output/chr16.dose.vcf.gz";
-    //std::string genotype_f = "/net/fantasia/home/sarahgra/CHIP_data_GLGC/1KGP3_imputation_results_EUR/new_1KGP3_imputation_results/chr16.dose.vcf.gz";
-    std::string genotype_f  = "/net/hunt/home/kotah/prs-server-beta/imputation/imp-server-output/chr16.dose.head10000.vcf.gz"; 
-    //std::string genotype_f = "/net/hunt/home/kotah/prs-server-beta/doses/chr16/HUNT_chr16_chunk10_dosages_pruned.dose";
-    std::string output_file = "/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/tests/sample-results/imp-server-chr16-scores-X626.8-head10000both-ALLELESWAP.txt";
+    if (weight_file.empty() || dosage_file.empty() || output_file.empty()) 
+    {
+        std::cerr << "Weight, dosage, and output file arguments cannot be empty\n"; 
+        exit(0); 
+    }
     unsigned int iid_count,pos,var;
     std::vector<double> dosages;
     std::string chr,ea,oa; 
-    Genotypes genotypes(genotype_f);
-    std::vector<std::string> indiv_iids; 
-    std::cout << "Read in genotypes" << '\n';
-    Weights weights;
-    weights.read_weight_file(filename);
-    std::cout << "Read in weight_file" << '\n';
-    std::vector<std::string> samples;
-    genotypes.open(samples);
-    iid_count = genotypes.get_selected_samples().size();
-    Individual_scores scores(weights.num_weights, iid_count);
-    scores.IIDs = genotypes.get_selected_samples();
-    //indiv_iids = genotypes.get_selected_samples();
-    //populate_ofile(output_file,indiv_iids);  
-    //Individual_scores scores(weights.num_weights, iid_count);
+    try { 
+        Genotypes genotypes(dosage_file);
+        std::vector<std::string> indiv_iids;
+        if (verbose_flag)  
+    	    std::cout << "Read in genotypes" << '\n';
+        Weights weights;
+        weights.read_weight_file(weight_file);
+        if (verbose_flag) 
+    	    std::cout << "Read in weight_file" << '\n';
+        std::vector<std::string> samples;
+        genotypes.open(samples);
+        iid_count = genotypes.get_selected_samples().size();
+        Individual_scores scores(weights.num_weights, iid_count);
+        scores.IIDs = genotypes.get_selected_samples();
+    } 
+    catch(const char* msg) { 
+        std::cerr << msg << '\n'; 
+    } 
 
     var = 0;
     for(Row w_row : weights.rows){
-        //print_vec(w_row.weights);
         ea = w_row.alt;
         oa = w_row.ref;
         chr = w_row.chr;
         pos = w_row.pos;
-	//std::cout << chr << ":" << pos << '\n';
+
 	if(var % 10000 == 0) 
             std::cout << "Processed " << var << " rows from weight_file" << '\n';
         int it = 0;
-        //arma::vec dosage =  genotypes.read_variant(chr,pos,ea,oa); //fixme, uncomment me to test!
         dosages = genotypes.read_variant(chr,pos,ea,oa);
-	//dosages.print();
-	//print_vec(dosages);
         var++;
         if(dosages.size() == 0)
             continue;
-        //std::transform(w_row->weights.begin(),w_row->weights.end(),calculate_prs);
         double weight = 0.00;
         while(it < weights.num_weights){
             std::vector<double> prs_vec;
             weight = w_row.weights[it];
-            prs_vec = calculate_prs(weight,dosages);
+            try { 
+            	prs_vec = calculate_prs(weight,dosages);
+            } 
+            catch(const char* msg) {
+                std::cerr << msg << '\n'; 
+            } 
             std::transform(scores.scores[it].begin(),scores.scores[it].end(),prs_vec.begin(),scores.scores[it].begin(), std::plus<double>());
-            //populate_ofile(output_file,scores.scores[it]);
             it++;
         }
     }
-   // print_vec(scores.scores[0]);
    print_prs(output_file, scores); 
 }

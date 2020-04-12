@@ -43,6 +43,7 @@ void Weights::read_weight_file(std::string weight_fn)
                 line_split = tokenize_header(line);
                 this->col_names = line_split;
                 this->num_weights = this->col_names.size() - 5; //5==# non-weight columns
+                std::cout << "this->num_weights : " << this->num_weights << '\n'; 
                 weights.resize(this->num_weights);
             }
             else {
@@ -56,7 +57,7 @@ void Weights::read_weight_file(std::string weight_fn)
         }
     }
     else {
-        std::cout << "error catching and catching not yet implemented" << '\n';
+        throw("Error, weight_file was not able to be opened, check path\n"); 
     }
     infile.close(); 
     sort(this->rows.begin(),this->rows.end(),&comparator);
@@ -107,6 +108,9 @@ std::vector<std::string> tokenize_header(std::string line, int vec_length)
     std::vector<std::string> value_vec;
     if (vec_length > 0)
         value_vec.reserve(vec_length);
+    else 
+        throw("Invalid header\n"); 
+
     std::stringstream ss(line);
     std::string val;
     while(getline(ss,val,'\t')) {
@@ -118,9 +122,11 @@ std::vector<std::string> tokenize_header(std::string line, int vec_length)
 
 Row tokenize_row(std::string line, int num_weights, double p_thresh)
 {
-    int pos;
+    if(!num_weights ||  num_weights == 0) 
+	throw("no weights included\n");
+    int pos = -1; 
     std::string chr,ref,alt;
-    double p_val;
+    double p_val = -1;
     std::vector<double> weights;
     weights.reserve(num_weights);
     std::string ea,oa,val;
@@ -142,7 +148,9 @@ Row tokenize_row(std::string line, int num_weights, double p_thresh)
         }
         idx += 1;
     }
-    if(p_val > p_thresh)
+    if(chr.empty() || (pos == -1) || ref.empty() || alt.empty() || (p_val == -1))
+        throw("All fields must be present in each line, refer to README for formatting\n") 
+    if(p_val < p_thresh)
         return Row();
     Row row(chr,pos,ref,alt,p_val,weights);
     return row;
