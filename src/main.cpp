@@ -10,6 +10,7 @@
 #include "/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/cget/include/savvy/armadillo_vector.hpp"
 #include <getopt.h>
 #include <stdio.h>
+#include <iomanip>
 
 void populate_ofile(std::string file_name, Individual_scores indivs) { 
      std::ofstream txt_out; 
@@ -18,7 +19,7 @@ void populate_ofile(std::string file_name, Individual_scores indivs) {
          txt_out << indivs.IIDs[idx] << '\t';
          int counter = 1; 
          for(int w_idx=0; w_idx < indivs.scores.size(); w_idx++) { 
-             txt_out << indivs.scores[w_idx][idx]; 
+             txt_out << std::setprecision(16) << indivs.scores[w_idx][idx]; 
 	     if(counter != indivs.scores.size()) 
                  txt_out << '\t';
              counter++; 
@@ -84,7 +85,7 @@ int main(int argc, char* argv[]) {
         exit(0); 
     }
     unsigned int iid_count,pos,var;
-    std::vector<double> dosages;
+    std::vector<long double> dosages;
     std::string chr,ea,oa; 
     try 
     { 
@@ -103,31 +104,47 @@ int main(int argc, char* argv[]) {
         scores.IIDs = genotypes.get_selected_samples();
 
         var = 0;
+        std::cout << "Number of row weights : " << weights.rows.size() << '\n'; 
         for(Row w_row : weights.rows){
             ea = w_row.alt;
             oa = w_row.ref;
             chr = w_row.chr;
             pos = w_row.pos;
+            std::cout << chr << ':' << pos << ':' << ea << ':' << oa << '\n';
 
-    	if(var % 10000 == 0) 
+            if(var % 10000 == 0) 
                 std::cout << "Processed " << var << " rows from weight_file" << '\n';
             int it = 0;
             dosages = genotypes.read_variant(chr,pos,ea,oa);
             var++;
-            if(dosages.size() == 0)
+            /*if(dosages.size() == 0) { 
+                std::cout << "dosage size = 0\n"; 
+            } */
+            if(dosages.empty()) {
                 continue;
+            }
             double weight = 0.00;
+            //std::cout << "num_weights : " << weights.num_weights << '\n'; 
             while(it < weights.num_weights){
-                std::vector<double> prs_vec;
-                weight = w_row.weights[it]; 
+                //std::cout << "enters while loop\n"; 
+                std::vector<long double> prs_vec;
+                weight = w_row.weights[it];
+                if (weight == 0) {
+                    std::cout << weight << '\n'; 
+                    it++; 
+                    continue; 
+                }
+                //std::cout << "dosages.size() : " << dosages.size() << " prs_vec.size() : " << prs_vec.size(); 
                 prs_vec = calculate_prs(weight,dosages);
+                //std::cout << "dosages.size() : " << dosages.size() << " prs_vec.size() : " << prs_vec.size();
+                //std::cout << "scores.scores[it].size() : " <<  scores.scores[it].size() << '\n';  
                 std::transform(scores.scores[it].begin(),scores.scores[it].end(),prs_vec.begin(),scores.scores[it].begin(), std::plus<double>());
                 it++;
             }
         }
        if (verbose_flag)
             std::cout << "Printing results to " << output_file << '\n'; 
-       populate_ofile(output_file, scores); 
+       populate_ofile(output_file, scores);
     }
     catch(const char* msg) { 
         std::cerr << msg << '\n';

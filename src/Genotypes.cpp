@@ -18,7 +18,7 @@ void Genotypes::open(const std::vector<std::string>& samples) {
   }
   is_reading = false;
   has_cached = false;
-  f->read(anno,dosages); //fixme, double-check this for accuracy assessments; had to initialize this somewhere; checkin with Daniel Taliun
+  //f->read(anno,dosages); //fixme, double-check this for accuracy assessments; had to initialize this somewhere; checkin with Daniel Taliun
 }
 
 std::vector<std::string> Genotypes::get_all_samples() const {
@@ -33,18 +33,23 @@ std::vector<std::__cxx11::basic_string<char> > Genotypes::get_chromosomes() cons
   return savvy::vcf::indexed_reader<1>(file, {""}, savvy::fmt::gt).chromosomes();
 }
 
-std::vector<double> Genotypes::read_variant(const std::string& chromosome, unsigned int position, const std::string& risk_allele, const std::string& protective_allele) {
-  if (is_reading) {
+std::vector<long double> Genotypes::read_variant(const std::string& chromosome, unsigned int position, const std::string& risk_allele, const std::string& protective_allele) {
+    std::cout << "Input combination : " << chromosome << ':' << position << ':' << risk_allele << ':' << protective_allele << '\n';
+    if (is_reading) {
      if ((chromosome.compare(anno.chromosome()) != 0) || (position > anno.position() + 10000)) {
+        std::cout << "is_reading = true" << '\n'; 
 	f->reset_region({ chromosome, position, std::numeric_limits<int>::max() });
         has_cached = false;
      }
   } else { 
+     std::cout << "is_reading = false" << '\n'; 
      f->reset_region({ chromosome, position, std::numeric_limits<int>::max() });
      is_reading = true;
      has_cached = false;
   }
-  if (has_cached) {
+  if (!has_cached) {
+     //std::cout << "Has cached triggered @ " << chromosome << ':' << position << ':' << risk_allele << ':' << protective_allele << '\n';
+     std::cout << "has_cached = false" << '\n'; 
      f->read(anno, dosages);
   }
   bool position_found = false;
@@ -52,10 +57,12 @@ std::vector<double> Genotypes::read_variant(const std::string& chromosome, unsig
   while (f->good()) { //read as you go? double-check sorting for this?
      if (anno.position() < position) {
         f->read(anno, dosages);
+        std::cout << "anno.position() : " << anno.position() << '<' << " position : " << position << '\n'; 
         continue;
      }
      if (anno.position() > position) {
         has_cached = true; 
+        std::cout << "anno.position() : " << anno.position() << '>' << " position : " << position << '\n';
         break;
      }
      position_found = true;
@@ -65,15 +72,17 @@ std::vector<double> Genotypes::read_variant(const std::string& chromosome, unsig
         flip = true;
      } else if ((risk_allele.compare(anno.alt()) != 0) or (protective_allele.compare(anno.ref()) != 0)) {
         f->read(anno, dosages);
+        std::cout << "no flip change\n"; 
         continue;
      }
      if (flip) {
+        std::cout << "Flipped alleles " << protective_allele << ":" << risk_allele << "at" << anno.chromosome() << ":" << anno.position() << '\n';
         dosages -= 2.0;
         dosages *= -1;
      }
      has_cached = false;
-     std::vector<double> dose_vec; 
-     dose_vec = arma::conv_to<std::vector<double>>::from(dosages);
+     std::vector<long double> dose_vec; 
+     dose_vec = arma::conv_to<std::vector<long double>>::from(dosages);
      //std::cout << "nonempty vec" << '\n';
      return dose_vec;
   }
@@ -83,6 +92,6 @@ std::vector<double> Genotypes::read_variant(const std::string& chromosome, unsig
   } /* else {
      Rcpp::warning("No variant at position %s:%d", anno.chromosome(), anno.position());
   } */
-  std::vector<double> vec;
+  std::vector<long double> vec;
   return vec; // return empty std::vector if variant was not found
 }

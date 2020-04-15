@@ -10,12 +10,12 @@ public:
     int pos;
     std::string chr,ref,alt;
     double p_value;
-    std::vector<double> weights;
+    std::vector<long double> weights;
     bool is_empty = 1;
     
     //member functions
     Row() = default;
-    Row(std::string chr, int pos, std::string ref, std::string alt, double p_value, std::vector<double> weights);
+    Row(std::string chr, int pos, std::string ref, std::string alt, double p_value, std::vector<long double> weights);
 
     void read_weight(std::string line) const {};
     
@@ -48,7 +48,7 @@ public:
 
 bool comparator(const Row lhs, const Row rhs);
 void print_vec(std::vector<double> vec);
-std::vector<double> calculate_prs(double weight, std::vector<double> dosages);
+std::vector<long double> calculate_prs(long double weight, std::vector<long double> dosages);
 std::vector<std::string> tokenize_header(std::string line, int vec_length = 0);
 Row tokenize_row(std::string line, int num_weights, double p_thresh);
 

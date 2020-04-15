@@ -34,7 +34,7 @@ public:
     
     std::vector<std::__cxx11::basic_string<char> > get_chromosomes() const;
     
-    std::vector<double> read_variant(const std::string& chromosome, unsigned int position, const std::string& risk_allele, const std::string& protective_allele);
+    std::vector<long double> read_variant(const std::string& chromosome, unsigned int position, const std::string& risk_allele, const std::string& protective_allele);
 };
 
 #endif /* Genotypes_h */
