@@ -1,4 +1,3 @@
-//#include savvy
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -6,8 +5,6 @@
 #include "Weights.h"
 #include "Individuals.h"
 #include "Genotypes.h"
-#include "/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/cget/include/savvy/reader.hpp"
-#include "/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/cget/include/savvy/armadillo_vector.hpp"
 #include <getopt.h>
 #include <stdio.h>
 #include <iomanip>
@@ -24,7 +21,7 @@ void populate_ofile(std::string file_name, Individual_scores indivs) {
                  txt_out << '\t';
              counter++; 
          }
-         txt_out << '\n'; //fixme, will a newline at the end cause issues? 
+         txt_out << '\n'; 
      }
      txt_out.close();
      return;
@@ -33,6 +30,7 @@ void populate_ofile(std::string file_name, Individual_scores indivs) {
 
 int main(int argc, char* argv[]) {
     std::string weight_file, dosage_file, output_file;
+    double p_thresh = -1.00; 
     int verbose_flag = 0;
     int c;  
 
@@ -43,11 +41,12 @@ int main(int argc, char* argv[]) {
             {"verbose", no_argument, &verbose_flag, 1},
             {"weight", required_argument,	0, 'w'},
             {"dosage", required_argument,	0, 'd'},
-            {"output", required_argument,	0, 'o'}
+            {"output", required_argument,	0, 'o'},
+            {"pthresh", required_argument,      0, 'p'}
         };
 
         int option_index = 0; 
-        c  = getopt_long(argc, argv, "w:d:o:", long_options, &option_index); 
+        c  = getopt_long(argc, argv, "w:d:o:p:", long_options, &option_index); 
 
         if (c == -1) 
             break; 
@@ -64,16 +63,16 @@ int main(int argc, char* argv[]) {
                 break; 
             case 'w':
                 weight_file = optarg;
-                std::cout << weight_file << '\n';
                 break;  
             case 'd':
                 dosage_file = optarg; 
-                std::cout << dosage_file << '\n';
                 break;  
             case 'o': 
                 output_file = optarg; 
-                std::cout << output_file << '\n';
-                break;  
+                break;
+            case 'p':
+                p_thresh = std::stod(optarg); 
+                break;
             default: 
                 std::cout << "enters default and exits \n"; 
                 exit(0);  
@@ -94,7 +93,10 @@ int main(int argc, char* argv[]) {
         if (verbose_flag)  
     	    std::cout << "Read in genotypes" << '\n';
         Weights weights;
-        weights.read_weight_file(weight_file);
+        if (p_thresh == -1.00)   
+            weights.read_weight_file(weight_file);
+        else
+            weights.read_weight_file(weight_file, p_thresh);
         if (verbose_flag) 
     	    std::cout << "Read in weight_file" << '\n';
         std::vector<std::string> samples;
@@ -103,41 +105,30 @@ int main(int argc, char* argv[]) {
         Individual_scores scores(weights.num_weights, iid_count);
         scores.IIDs = genotypes.get_selected_samples();
 
-        var = 0;
-        std::cout << "Number of row weights : " << weights.rows.size() << '\n'; 
+        var = 0; 
         for(Row w_row : weights.rows){
             ea = w_row.alt;
             oa = w_row.ref;
             chr = w_row.chr;
             pos = w_row.pos;
-            std::cout << chr << ':' << pos << ':' << ea << ':' << oa << '\n';
 
             if(var % 10000 == 0) 
                 std::cout << "Processed " << var << " rows from weight_file" << '\n';
             int it = 0;
             dosages = genotypes.read_variant(chr,pos,ea,oa);
             var++;
-            /*if(dosages.size() == 0) { 
-                std::cout << "dosage size = 0\n"; 
-            } */
             if(dosages.empty()) {
                 continue;
             }
             double weight = 0.00;
-            //std::cout << "num_weights : " << weights.num_weights << '\n'; 
             while(it < weights.num_weights){
-                //std::cout << "enters while loop\n"; 
                 std::vector<long double> prs_vec;
                 weight = w_row.weights[it];
                 if (weight == 0) {
-                    std::cout << weight << '\n'; 
-                    it++; 
+                    it++;
                     continue; 
                 }
-                //std::cout << "dosages.size() : " << dosages.size() << " prs_vec.size() : " << prs_vec.size(); 
-                prs_vec = calculate_prs(weight,dosages);
-                //std::cout << "dosages.size() : " << dosages.size() << " prs_vec.size() : " << prs_vec.size();
-                //std::cout << "scores.scores[it].size() : " <<  scores.scores[it].size() << '\n';  
+                prs_vec = calculate_prs(weight,dosages); 
                 std::transform(scores.scores[it].begin(),scores.scores[it].end(),prs_vec.begin(),scores.scores[it].begin(), std::plus<double>());
                 it++;
             }

@@ -10,7 +10,6 @@ class Individual_scores
 protected :
     int num_weights; //rows
     int num_ids; //columns
-    //std::vector<std::string> IIDs;
     std::vector<std::string> weights;
 public:
     std::vector<std::string> IIDs; //temp -- fixme, return with function call

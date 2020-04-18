@@ -27,12 +27,12 @@ bool Weights::check_input(std::string file_name)
     return 0;
 }
 
-void Weights::read_weight_file(std::string weight_fn)
+void Weights::read_weight_file(std::string weight_fn, double p_value)
 {
     std::ifstream infile(weight_fn.c_str());
     int row_idx = 0;
     std::vector<std::string> col_names;
-    if (infile.is_open()) { //fixme, error checking
+    if (infile.is_open()) {
         std::string line;
         while(getline(infile, line)) {
             std::stringstream ss(line);
@@ -42,16 +42,14 @@ void Weights::read_weight_file(std::string weight_fn)
             if(row_idx == 0) {
                 line_split = tokenize_header(line);
                 this->col_names = line_split;
-                this->num_weights = this->col_names.size() - 5; //5==# non-weight columns
-                //std::cout << "this->num_weights : " << this->num_weights << '\n'; 
+                this->num_weights = this->col_names.size() - 5;
                 weights.resize(this->num_weights);
             }
             else {
                 Row row;
-                row = tokenize_row(line,this->num_weights, 1.00); //fixme, p-value should not be hardcoded
+                row = tokenize_row(line,this->num_weights, p_value); //fixme, hard-coded pvalue
                 if(!row.is_empty)
                     this->rows.push_back(row);
-                //sort(this->rows.begin(),this->rows.end(),&comparator);
             }
             row_idx += 1;
         }
@@ -61,7 +59,6 @@ void Weights::read_weight_file(std::string weight_fn)
     }
     infile.close(); 
     sort(this->rows.begin(),this->rows.end(),&comparator);
-    //std::cout << this->rows.size() << '\n';
     return;
 }
 
@@ -69,39 +66,24 @@ void Weights::read_weight_file(std::string weight_fn)
 
 bool comparator(const Row lhs, const Row rhs)
 {
-    if(lhs.chr == rhs.chr) //does not currently allow for duplicate chr:pos...is this a problem?
-        return lhs.pos < rhs.pos; // < originally, testing for changes
+    if(lhs.chr == rhs.chr) //Assess for duplicates
+        return lhs.pos < rhs.pos;
     if(lhs.chr == "X")
 	return 0;
     if(rhs.chr == "X")
 	return 1;
-    return std::stoi(lhs.chr) < std::stoi(rhs.chr); // <  
+    return std::stoi(lhs.chr) < std::stoi(rhs.chr);  
 }
-
-/*void print_vec(std::vector<double> vec)
-{ //fixme, this helper can ONLY print std::vectors of type <std::string>
-    for(auto i = vec.begin(); i != vec.end(); ++i) {
-        std::cout << *i << ' ';
-    }
-    std::cout << '\n';
-    return;
-}*/
 
 std::vector<long double> calculate_prs(long double weight, std::vector<long double> dosages)
 {
-    //fixme,  add a check to skip zero values
     std::vector<long double> prs_vec;
     prs_vec.reserve(dosages.size());
     for(auto dosage : dosages) {
         double prs = 0.00;
         if(weight < 0.00) { 
-            //std::cout << "negative weight : " << weight << '\n'; 
-            //std::cout << "negative weight, unmodified dosage val: " <<  dosage << '\n'; 
             dosage -= 2.0;
-            //std::cout << "negative weight, new dosage val : " << dosage << '\n';
         }
-        //if (weight < 0) 
-            //std::cout << "negative weight, new dosage val : " << dosage << '\n';
         prs =  weight * dosage;
         prs_vec.push_back(prs);
     }
@@ -124,7 +106,7 @@ std::vector<std::string> tokenize_header(std::string line, int vec_length)
 
 
 Row tokenize_row(std::string line, int num_weights, double p_thresh)
-{
+{ 
     if(!num_weights ||  num_weights == 0) 
 	throw("no weights included\n");
     int pos = -1; 
@@ -137,7 +119,7 @@ Row tokenize_row(std::string line, int num_weights, double p_thresh)
     std::stringstream ss(line);
     
     while(getline(ss,val,'\t')) {
-        switch (idx) //fixme, is this bad practice? Hacky?
+        switch (idx)
         {
             case 0: chr=val; break;
             case 1: pos=std::stoi(val); break;
@@ -154,7 +136,6 @@ Row tokenize_row(std::string line, int num_weights, double p_thresh)
     if(chr.empty() || (pos == -1) || ref.empty() || alt.empty() || (p_val == -1))
         throw("All fields must be present in each line, refer to README for formatting\n"); 
     if(p_val > p_thresh) {
-        std::cout << "inappropriate p-value \n"; 
         return Row();
     }
     Row row(chr,pos,ref,alt,p_val,weights);

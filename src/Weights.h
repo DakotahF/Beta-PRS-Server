@@ -40,7 +40,7 @@ public:
     Weights() = default;
     
     bool check_input(std::string file_name);
-    void read_weight_file(std::string weight_fn);
+    void read_weight_file(std::string weight_fn, double p_value = 1.00);
 
 };
 
