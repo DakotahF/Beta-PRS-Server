@@ -10,59 +10,6 @@
 
 using namespace std;
 
-void merge_weights(Weight &merged_weights, std::string phenotype_list, int phenotype_count, int verbose_flag) {
-    merged_weights.phenotypes.resize(phenotype_count);
-    std::ifstream phen_list(phenotype_list.c_str());
-    std::string phenotype,phen_location;
-    if (phen_list.is_open()) {
-        if (verbose_flag)
-            std::cout << "phenotype_list is open (fx->initialize())" << '\n';
-        std::string line;
-        int line_num = 0;
-        int format_type = 0;
-        bool header = true;
-        while(getline(phen_list, line)) {
-            if(header) {
-                header = false;
-                continue;
-            }
-            std::stringstream ss(line);
-            std::string val;
-            int idx = 0;
-            while(getline(ss,val,'\t')){ //fixme, code repetition
-                switch(idx) //fixme, reading in whitespace?
-                {
-                    case 0: phenotype=val; break;
-                        //case 1: IID=val; break;
-                    case 1: phen_location=val; break;
-                    case 2: format_type=stoi(val); break;
-                    default:
-                        //cassert(formatting);
-                        std::cout << "FIXME, throw formatting error" << '\n';
-                }
-                idx++;
-            }
-            if (phenotype.empty() || phen_location.empty())
-                throw("Null phenotype and/or null phenotype weight location found in file. Ensure that values are tab-separated. Check README for more information.");
-            //std::cout << phen_location << '\n';
-            try {
-                merged_weights.populate_dict(line_num, phen_location,phenotype_count, format_type, verbose_flag);
-                if (merged_weights.phenotypes.size() < line_num)
-                    throw("User-provided phenotype number does not match actual number of phenotype weights provided in list file.");
-                merged_weights.phenotypes[line_num] = phenotype;
-            }
-            catch(const char* msg) {
-                throw(msg);
-            }
-            line_num++;
-        }
-    }
-    else
-        throw("Phenotype list file not valid, check path");
-    phen_list.close();
-    return;
-}
-
 
 int main(int argc, char* argv[]) 
 {

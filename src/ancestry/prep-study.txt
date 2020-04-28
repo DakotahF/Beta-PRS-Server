@@ -1,0 +1,54 @@
+#!/bin/bash
+#SBATCH --job-name=test-MGI
+
+input_directory='/net/hunt/disk2/MGI_data_2/MGI_all_data_HPI-3498'
+qcdir='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/qcdir'
+refdir='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference'
+refname='1000genomes.pruned'
+ukbbsnps='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/ancestry-snps.ids'
+resultdir='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/results'
+studdir='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/study'
+pattern='*.vcf.gz'
+reference_panel=''
+reference_data='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/1000genomes.pruned'
+#inputfile='Willer_HPI3498_HUM00094409_mgi_HRC.chr10.vcf.gz'
+inputfile=$1
+name=${inputfile##*/}
+foldername="${name%.vcf.gz}"
+
+sbatch --job-name prune-and-filter --mem=100G --wrap="
+echo $name
+
+mkdir $studdir/$foldername
+if [ ! -f $studdir/$foldername/$foldername ]; then
+    plink-1.9 --vcf $input_directory/$name --make-bed --out $studdir/$foldername/$foldername
+fi
+
+mkdir $qcdir/$foldername
+if [ ! -f $qcdir/$foldername/$foldername.filter ]; then
+    plink-1.9 --bfile $studdir/$foldername/$foldername \
+              --indep-pairwise 50 5 0.2 \
+               --out $qcdir/$foldername/$foldername.filter
+fi
+
+#rm $qcdir/$name.filter
+
+if [ ! -f $qcdir/$foldername/$foldername.filtered ]; then
+    plink-1.9 --bfile $studdir/$foldername/$foldername \
+        --extract $qcdir/$foldername/$foldername.filter.prune.in \
+        --make-bed \
+        --out $qcdir/$foldername/$foldername.filtered
+fi
+#rm $qcdir/$name.filtered
+
+#prune input file based on ukbb snps
+if [ ! $qcdir/$foldername/$foldername.filtered.pruned ]; then 
+plink-1.9 --bfile $qcdir/$foldername/$foldername.filtered \
+      --extract $ukbbsnps \
+      --make-bed \
+      --out $qcdir/$foldername/$foldername.filtered.pruned
+fi 
+
+echo $qcdir/$foldername/$foldername.filtered.pruned >> $resultdir/cleaned_sample_list.txt
+"
+

@@ -1,0 +1,33 @@
+#!/bin/bash
+#SBATCH --job-name=ALL-anc-job-submit
+#SBATCH --time=15:00:00
+
+input_directory='/net/hunt/disk2/MGI_data_2/MGI_all_data_HPI-3498'
+qcdir='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/qcdir'
+refdir='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference'
+refname='1000genomes.pruned'
+ukbbsnps='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/ancestry-snps.ids'
+resultdir='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/results'
+pattern='*.vcf.gz'
+reference_panel=''
+reference_data='/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/1000genomes.pruned'
+
+for inputfile in $input_directory/*chr*.vcf.gz 
+    do (
+        name=${inputfile##*/}
+        echo $inputfile #fixme, edit with string interpolation. 
+
+        #if [[ ! -f < $qcdir/$name.filtered.pruned> ]]
+        #then 
+        sbatch prep-study.txt $inputfile
+        #else
+        #    echo $qcdir/$name.filtered.pruned 'already exists' 
+        #fi 
+    )
+done  
+
+echo 'finished' 
+#plink-1.9 pca 
+
+#print final filenames to all_my_files.txt and merge with 1kg-plink-pruned using plink-1.9 --merge-list. 
+#run with pca separately or honestly just combine files and run sequentially. <- THIS. 

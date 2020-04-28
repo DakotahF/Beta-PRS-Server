@@ -45,3 +45,5 @@ public:
     void print_to_output(std::string filename);
 };
 
+void merge_weights(Weight &merged_weights, std::string phenotype_list, int phenotype_count, int verbose_flag); 
+
