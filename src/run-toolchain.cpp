@@ -93,14 +93,14 @@ std::string merge_traits(std::string weight_list, std::string output_dir, int ve
 }
 
 std::string prep_ancestry_command(std::string dosage, std::string output_dir) { 
-    std::string command,ukbbsnps,outputdir;
-    command = "sbatch --job-name=prune-and-filter --mem=60G --wrap=\"ukbbsnps=" + ukbbsnps + '\n' + 
-		"inputfile=" + "\"" + dosage + "\"" + '\n' +
-                "outputdir=" + "\"" +  output_dir + "\"" + '\n' +
+    std::string command,ukbbsnps;
+    //ukbbsnps = "/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/ancestry-snps.ids"; 
+    command = std::string("sbatch --job-name=prune-and-filter --mem=60G --wrap=\"") + "ukbbsnps="+ "\\\"net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/ancestry-snps.ids\\\"" + '\n' + "inputfile=" + "\\\"" + trim(dosage) + "\\\"" + //"\\\"\n" +
+                "outputdir=" + "\\\"" +  output_dir + "\\\"\n" +
                 "name=${inputfile##*/}\n" +
-                "foldername=\"${name%.vcf.gz}\"\n" +
-                "resultdir=\"$outputdir/results\"\n" +
-                "qcdir=\"$outputdir/qcdir\"" + 
+                "foldername=\\\"${name%.vcf.gz}\\\"\n" +
+                "resultdir=\\\"$outputdir/results\\\"\n" +
+                "qcdir=\\\"$outputdir/qcdir\\\"" + 
 		"echo $name\n" + 
 		"mkdir $outputdir/$foldername\n" +
 		"if [ ! -f $outputdir/$foldername/$foldername.bed ]; then\n" + 
@@ -151,7 +151,7 @@ std::string submit_jobs(std::string dosages_list, std::string weight_file, std::
     std::string anc_id;
     while(getline(in, dosage)) {
         if (ancestry_flag) {
-            command = "sbatch ./ancestry/prep-study.txt " + dosage + " " + output_dir; //must include full path
+            //command = "sbatch ./ancestry/prep-study.txt " + dosage + " " + output_dir; //must include full path
             command = prep_ancestry_command(dosage, output_dir);
             response = exec(command);
             anc_id = tokenize(response,' ',-1);
