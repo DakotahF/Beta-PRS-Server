@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream> 
+#include <algorithm>
 #include <cstdlib>
 #include <string>
 #include <iostream>
@@ -11,11 +12,46 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <chrono>
-#include <thread> 
+#include <thread>
+#include <vector>  
 //#include "Helpers.h" 
 #include "weight-formatter/Options.h"   
 
 //REQUIRES c++11  
+
+//helpers...must be moved
+// trim from start
+static inline std::string &ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+            std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return s;
+}
+
+// trim from end
+static inline std::string &rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+            std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    return s;
+}
+
+// trim from both ends
+static inline std::string &trim(std::string &s) {
+    return ltrim(rtrim(s));
+}
+
+std::string tokenize(std::string text, char delim, int pos) {
+    std::stringstream ss(trim(text)); 
+    std::string val; 
+    vector<std::string> tokens; 
+    while(getline(ss, val, delim)) {
+        tokens.push_back(val);
+    }
+    if(!tokens.empty() && (pos < tokens.size()) && pos > 0)  
+        return tokens[pos]; 
+    if(pos == -1) 
+        return tokens.back();
+    return ""; 
+}
 
 std::string exec(std::string command) {
    char buffer[128];
@@ -44,14 +80,10 @@ std::string merge_traits(std::string weight_list, std::string output_dir, int ve
     Weight merged_weights;
     int num_files = 0;
     try {
-        std::cout << "weights_file : " << weight_list << '\n'; 
         command = "cat " + weight_list + " | wc -l";
         num_files = stoi(exec(command)) - 1; //account for header
-        std::cout << "num weight files to merge : " << num_files << '\n'; 
         merge_weights(merged_weights, weight_list, num_files, verbose_flag);
-        std::cout << "merged weights -> SUCCES!\n";
         weights_file = output_dir + "/merged-weights.txt";
-        std::cout << "beginning print_to_output\n"; 
         merged_weights.print_to_output(weights_file);
      }
      catch (const char* msg) {
@@ -60,9 +92,49 @@ std::string merge_traits(std::string weight_list, std::string output_dir, int ve
      return weights_file; 
 }
 
+std::string prep_ancestry_command(std::string dosage, std::string output_dir) { 
+    std::string command,ukbbsnps,outputdir;
+    command = "sbatch --job-name=prune-and-filter --mem=60G --wrap=\"ukbbsnps=" + ukbbsnps + '\n' + 
+		"inputfile=" + "\"" + dosage + "\"" + '\n' +
+                "outputdir=" + "\"" +  output_dir + "\"" + '\n' +
+                "name=${inputfile##*/}\n" +
+                "foldername=\"${name%.vcf.gz}\"\n" +
+                "resultdir=\"$outputdir/results\"\n" +
+                "qcdir=\"$outputdir/qcdir\"" + 
+		"echo $name\n" + 
+		"mkdir $outputdir/$foldername\n" +
+		"if [ ! -f $outputdir/$foldername/$foldername.bed ]; then\n" + 
+    		"     plink-1.9 --vcf $inputfile --make-bed --out $outputdir/$foldername/$foldername\n" +
+                "fi\n" + 
+                "mkdir $qcdir/$foldername\n" +
+                "if [ ! -f $qcdir/$foldername/$foldername.filter ]; then\n" +
+    		"     plink-1.9 --bfile $outputdir/$foldername/$foldername\n" + 
+                "     --indep-pairwise 50 5 0.2\n" + 
+                "     --out $qcdir/$foldername/$foldername.filter\n" + 
+                "fi\n" +  
+                "if [ ! -f $qcdir/$foldername/$foldername.filtered ]; then\n" +  
+                "     plink-1.9 --bfile $outputdir/$foldername/$foldername\n" + 
+                "     --extract $qcdir/$foldername/$foldername.filter.prune.in\n" + 
+                "     --make-bed\n" + 
+                "     --out $qcdir/$foldername/$foldername.filtered\n" + 
+                "fi\n" + '\n' + 
+                "#prune input file based on ukbb snps\n" + 
+                "if [ ! $qcdir/$foldername/$foldername.filtered.pruned ]; then\n" + 
+                "     plink-1.9 --bfile $qcdir/$foldername/$foldername.filtered\n" + 
+                "     --extract $ukbbsnps\n" + 
+                "     --make-bed\n" + 
+                "     --out $qcdir/$foldername/$foldername.filtered.pruned\n" + 
+                "fi\n" + 
+                "echo $qcdir/$foldername/$foldername.filtered.pruned >> $resultdir/cleaned_sample_list.txt\n" + "\""; 
+    std::cout << command << '\n'; 
+    return command; 
+}
+
 std::string submit_jobs(std::string dosages_list, std::string weight_file, std::string output_dir, int verbose_flag,std::string ref_panel="/net/hunt/home/kotah/prs-server-beta/1000g/1KG-v3.ALL.id-sp.panel", int ancestry_flag=1, int run_limit=30) { 
-    std::string response, dosage;
-    std::string command; 
+    std::string response, dosage, score_file,ext; 
+    std::string command;
+    std::string anc_ids; 
+    ext = ".vcf.gz"; 
     if (ancestry_flag) { 
         command = "mkdir " +  output_dir + "/results";
         response = exec(command);
@@ -74,22 +146,37 @@ std::string submit_jobs(std::string dosages_list, std::string weight_file, std::
         std::cerr << "Input " + dosages_list << " filepath invalid\n";
         exit(1);  
     }
-    int current_jobs = 0; 
+    std::string filename; 
+    int start_pos;
+    std::string anc_id;
     while(getline(in, dosage)) {
-        while(current_jobs > run_limit) {
-            std::this_thread::sleep_for(std::chrono::seconds(180));
-            current_jobs = system("squeue -u kotah | wc -l");
-            std::cout << current_jobs << '\n'; 
-        }
-        if (ancestry_flag) { 
-            command = "sbatch ./ancestry/prep-study.txt " + dosage; //must include full path
+        if (ancestry_flag) {
+            command = "sbatch ./ancestry/prep-study.txt " + dosage + " " + output_dir; //must include full path
+            command = prep_ancestry_command(dosage, output_dir);
             response = exec(command);
-            std::cout << "ancestry response : " << response << "for doage file " << dosage <<'\n'; 
+            anc_id = tokenize(response,' ',-1);
+            if(anc_ids.empty() && !anc_id.empty()) 
+                anc_ids += anc_id; 
+            else if (!anc_id.empty()) 
+                anc_ids += ':' + anc_id; 
+            else 
+                std::cerr << "error submitting ancestry processing for dosage " <<  dosage << '\n';  
+            std::cout << "ancestry response : " << response << "for dosage file " << dosage <<'\n'; 
         }
-        command = "sbatch ./app --output " + output_dir +  " --dosage " + dosage + "--weight " + weight_file + " --verbose";
+        filename = tokenize(dosage,'/',-1);
+        start_pos = filename.find(ext); 
+        filename.erase(start_pos, ext.size());
+        score_file = output_dir + '/' + filename + ".txt";  
+        std::cout <<  "score file for output : "  << score_file << '\n'; 
+        command = "sbatch --job-name=prs-calculation --wrap=\"./app --output " + score_file +  " --dosage " + dosage + "--weight " + weight_file + " --verbose\""; //fixme, CURRENTLY VERBOSE MODE NO MATTER WHAT 
         std::cout << "prs response : " << response << "for dosage file " << dosage <<'\n';
+        std::cout << "command : "  << command << '\n'; 
         response = exec(command);
     }
+    std::cout << "ANC IDS " << anc_ids << '\n'; 
+    command = "sbatch --dependency=afterok:" + anc_ids + " /net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/src/ancestry/run-pca.txt " + output_dir; //check argparsing
+    response = exec(command); 
+    std::cout << "PCA response : " << response << '\n'; 
     return response; 
 }
 
@@ -162,18 +249,12 @@ int main(int argc, char *argv[]) {
     }
     else {
         std::cout << "Merge weights not initiated\n"; 
-        weight_file = weight_list; //if single weight or pre-merged, set input weight fiel equal to weight_list variable 
+        weight_file = weight_list; //if single weight or pre-merged, set input weight fiel equal to weight_list variable FIXME : CHECK IF PROPERLY FORMATTED
     }
 
 
     //submit jobs for ancestry-calculation if requested 
     std::string response, merged_file; 
     response = submit_jobs(dosages_list, weight_file, output_dir, verbose_flag, ref_panel, ancestry_flag); //fixme, add a way to detect errors or slurm-step memkill errors
-/*    while(curr_running > initial_running) {
-        sys.sleep(600); 
-    } */ 
-    
-    //exec("sbatch run-pca.txt --merged_file " + merged_file); //fixme, this needs to be moved to run in a chronological fashion 
-
     std::cout << "Finished\n"; 
 } 

@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
             {"output", required_argument,	0, 'o'},
             {"pthresh", required_argument,      0, 'p'}
         };
-
+ 
         int option_index = 0; 
         c  = getopt_long(argc, argv, "w:d:o:p:", long_options, &option_index); 
 
@@ -75,7 +75,8 @@ int main(int argc, char* argv[]) {
                 break;
             default: 
                 std::cout << "enters default and exits \n"; 
-                exit(0);  
+                exit(0);
+                break;   
         }
     }
     if (weight_file.empty() || dosage_file.empty() || output_file.empty()) 
@@ -88,6 +89,7 @@ int main(int argc, char* argv[]) {
     std::string chr,ea,oa; 
     try 
     { 
+        std::cerr << "enters main prs calculation successfully, reading in genotypes from " << dosage_file << " with verbose flag = " << verbose_flag << '\n'; 
         Genotypes genotypes(dosage_file);
         std::vector<std::string> indiv_iids;
         if (verbose_flag)  
@@ -104,7 +106,7 @@ int main(int argc, char* argv[]) {
         iid_count = genotypes.get_selected_samples().size();
         Individual_scores scores(weights.num_weights, iid_count);
         scores.IIDs = genotypes.get_selected_samples();
-
+        std::cout.flush(); 
         var = 0; 
         for(Row w_row : weights.rows){
             ea = w_row.alt;
@@ -112,8 +114,10 @@ int main(int argc, char* argv[]) {
             chr = w_row.chr;
             pos = w_row.pos;
 
-            if(var % 10000 == 0) 
+            if(var % 10000 == 0) {
                 std::cout << "Processed " << var << " rows from weight_file" << '\n';
+                std::cout.flush(); 
+            }
             int it = 0;
             dosages = genotypes.read_variant(chr,pos,ea,oa);
             var++;
