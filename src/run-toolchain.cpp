@@ -108,30 +108,34 @@ std::string prep_ancestry_command(std::string dosage, std::string outputdir) {
                 "     plink-1.9 --vcf " + inputfile + " --make-bed --out " + outputdir + '/' + foldername + '/' + foldername + '\n' +
                 "fi\n" + 
                 "mkdir " + qcdir  + '/' + foldername + '\n' +
-                "if [ ! -f " + qcdir + '/' + foldername + '/' + foldername + ".filter.prune.in ]; then\
-                      plink-1.9 --bfile " + outputdir + '/' + foldername + '/' + foldername +  
-                      " --indep-pairwise 50 5 0.2\ 
-                      --out " + qcdir + '/' + foldername + '/' + foldername + ".filter\n" + 
-                "fi\n" +  
-                "if [ ! -f " + qcdir + '/' + foldername + '/' + foldername + ".filtered.bim ]; then\n" +  
-                "      plink-1.9 --bfile " + outputdir + '/' + foldername + '/' + foldername +
-                      " --extract " + qcdir + '/' + foldername + '/' + foldername + ".filter.prune.in\
-                      --make-bed\ 
-                      --out " + qcdir + '/' + foldername + '/' + foldername + ".filtered\n" + 
-                "fi\n" + '\n' + 
-                "if [ ! -f " + qcdir + '/' + foldername + '/' + foldername + ".filtered.pruned.bim ]; then\n" + 
-                "     plink-1.9 --bfile " + qcdir + '/' + foldername + '/' + foldername + ".filtered\ 
-                      --extract " + ukbbsnps +
+                "if [ ! -f " + qcdir + '/' + foldername + '/' + foldername + ".filtered ]; then\n" +
+                "     plink-1.9 --bfile " + outputdir + '/' + foldername + '/' + foldername +
+                      " --extract " + ukbbsnps +
                       " --make-bed\
-                      --out " + qcdir + '/' + foldername + '/' + foldername + ".filtered.pruned\n" + 
+                      --out " + qcdir + '/' + foldername + '/' + foldername + ".filtered\n" +
                 "fi\n" + 
+                "if [ ! -f " + qcdir + '/' + foldername + '/' + foldername + ".filtered.prune.in ]; then\
+                      plink-1.9 --bfile " + qcdir + '/' + foldername + '/' + foldername + ".filtered" + 
+                      " --indep-pairwise 50 5 0.2\
+                      --out " + qcdir + '/' + foldername + '/' + foldername + ".filtered" + '\n' + /*'\n' + 
+                      "cat " + qcdir + '/' + foldername + '/' + foldername + ".filtered.prune.in >> " + 
+                        resultdir + "/study-snps.ids" + */
+                "fi\n" + 
+                "cat " + qcdir + '/' + foldername + '/' + foldername + ".filtered.prune.in >> " + 
+                        resultdir + "/study-snps.ids\n" +  
+                "if [ ! -f " + qcdir + '/' + foldername + '/' + foldername + ".filtered.pruned ]; then\n" +  
+                "      plink-1.9 --bfile " + outputdir + '/' + foldername + '/' + foldername +
+                      " --extract " + qcdir + '/' + foldername + '/' + foldername + ".filtered.prune.in\
+                      --make-bed\ 
+                      --out " + qcdir + '/' + foldername + '/' + foldername + ".filtered.pruned\n" + 
+                "fi\n" + '\n' + 
                 "echo " + qcdir + '/' + foldername + '/' + foldername + ".filtered.pruned >> " + resultdir + "/cleaned_sample_list.txt\n";
     command = std::string("sbatch --job-name=prune-and-filter --mem=60G --wrap=\"") + body + "\""; 
     std::cout << "COMMMMMMANNNNDDDD : " << command << '\n';
     return command; 
 }
 
-std::string submit_jobs(std::string dosages_list, std::string weight_file, std::string output_dir, int verbose_flag,std::string ref_panel="/net/hunt/home/kotah/prs-server-beta/1000g/1KG-v3.ALL.id-sp.panel", std::string ref_data="/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/src/ancestry/reference/1000genomes.pruned", int ancestry_flag=1, int run_limit=30) { 
+std::string submit_jobs(std::string dosages_list, std::string weight_file, std::string output_dir, int verbose_flag,std::string ref_panel="/net/hunt/home/kotah/prs-server-beta/1000g/1KG-v3.ALL.id-sp.panel", std::string ref_data="/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/1000genomes.pruned", int ancestry_flag=1, int run_limit=30) { 
     std::string resultdir = output_dir + "/results";
     std::string response, dosage, score_file,ext; 
     std::string command;
@@ -257,8 +261,9 @@ int main(int argc, char *argv[]) {
 
     //submit jobs for ancestry-calculation if requested 
     std::string response, merged_file; 
-    std::string ref_data = "/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/src/ancestry/reference/1000genomes.pruned"; 
-    ref_panel = "/net/hunt/home/kotah/prs-server-beta/1000g/1KG-v3.ALL.id-sp.panel";
+    std::string ref_data = "/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/1000genomes.pruned"; 
+    //ref_panel = "/net/hunt/home/kotah/prs-server-beta/1000g/1KG-v3.ALL.id-sp.panel";
+    ref_panel = "/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/1KG-v3.ALL.id-sp.panel"; 
     trim(ref_data); 
     trim(ref_panel); 
     response = submit_jobs(dosages_list, weight_file, output_dir, verbose_flag, ref_panel, ref_data, ancestry_flag); //fixme, add a way to detect errors or slurm-step memkill errors

@@ -11,14 +11,17 @@ echo $reference_data
 
 script_dir=$(cd `dirname $0` && pwd)
 
+#filter reference data for snps present in study 
+plink-1.9 --bfile $reference_data --extract $resultdir/study-snps.ids --make-bed --out $resultdir/pruned-refset
+
 #merge pruned input data and 1kg reference data
-plink-1.9 --bfile $reference_data --merge-list $resultdir/cleaned_sample_list.txt --make-bed --out $resultdir/MERGED
+plink-1.9 --bfile $resultdir/pruned-refset --merge-list $resultdir/cleaned_sample_list.txt --make-bed --out $resultdir/MERGED
 
 echo 'reference and sample data merge completed in plink binary format'
 
 #run plink2 pca approx 2 on merged data
 plink2 --bfile $resultdir/MERGED --pca approx 2 --out $resultdir/merged-pcs
-
+#plink2 --bfile $resultdir/MERGED --pca 2 --out $resultdir/merged-pcs-nona
 echo 'pca (approx 2) finished running'
 
 /net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/src/ancestry/a.out --sample $resultdir/merged-pcs.eigenvec --ref $reference_panel --out $resultdir/study-superpops.txt
