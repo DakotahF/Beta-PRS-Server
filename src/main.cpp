@@ -1,59 +1,50 @@
-#include <vector>
+/*
+    CS-11, main.cpp
+    Purpose: Runs weight-merging commands and generates properly-formatted weight file, submits ancestry-processing jobs,             ancestry-calculation job, and prs-calculation jobs. Does not chunk dosages, so this may be done beforehand               as of right now. 
+
+    @author Dakotah Feil
+    @version 1.1 05/01/20 
+*/
 #include <iostream>
-#include <fstream>
-#include <cstdlib>
-#include "Weights.h"
-#include "Individuals.h"
-#include "Genotypes.h"
+#include <string>
+#include <iostream>
+#include <stdexcept>
 #include <getopt.h>
 #include <stdio.h>
-#include <iomanip>
+#include <unistd.h>
+#include "Helpers.h" 
+#include "weight-formatter/Options.h"   
 
-void populate_ofile(std::string file_name, Individual_scores indivs) { 
-     std::ofstream txt_out; 
-     txt_out.open(file_name);
-     for(int idx=0; idx < indivs.IIDs.size(); idx++) {
-         txt_out << indivs.IIDs[idx] << '\t';
-         int counter = 1; 
-         for(int w_idx=0; w_idx < indivs.scores.size(); w_idx++) { 
-             txt_out << std::setprecision(16) << indivs.scores[w_idx][idx]; 
-	     if(counter != indivs.scores.size()) 
-                 txt_out << '\t';
-             counter++; 
-         }
-         txt_out << '\n'; 
-     }
-     txt_out.close();
-     return;
-}
+//REQUIRES c++11  
 
-
-int main(int argc, char* argv[]) {
-    std::string weight_file, dosage_file, output_file;
-    double p_thresh = -1.00; 
-    int verbose_flag = 0;
-    int c;  
+int main(int argc, char *argv[]) {
+    std::string dosages_list, weight_list, output_dir, ref_panel; 
+    int verbose_flag = 0; 
+    int merge_flag = 0; 
+    int ancestry_flag = 0; 
+    int run_limit = 15; 
+    int c; 
 
     while(1) 
     {
-        static struct option long_options[] =  
+        static struct option long_options[] = 
         {
             {"verbose", no_argument, &verbose_flag, 1},
-            {"weight", required_argument,	0, 'w'},
-            {"dosage", required_argument,	0, 'd'},
-            {"output", required_argument,	0, 'o'},
-            {"pthresh", required_argument,      0, 'p'}
+            {"merge", no_argument, &merge_flag, 1},
+            {"ancestry", no_argument, &ancestry_flag, 1},
+            {"dosages", required_argument, 0, 'd'}, //requires dosage_list.txt
+            {"output", required_argument, 0, 'o'},
+            {"weights", required_argument, 0, 'w'}, 
+            {"run_limit", required_argument, 0, 'r'},
+            {"ref_panel",  required_argument, 0, 'p'}
         };
- 
         int option_index = 0; 
-        c  = getopt_long(argc, argv, "w:d:o:p:", long_options, &option_index); 
-
-        if (c == -1) 
-            break; 
-        
-        switch(c) 
+        c  = getopt_long(argc, argv, "d:o:w:r:p:", long_options, &option_index);
+        if (c == -1)
+            break;
+        switch(c)
         {
-            case 0: 
+            case 0:
                 if (long_options[option_index].flag != 0)
                     break;
                 printf ("option %s", long_options[option_index].name);
@@ -61,88 +52,50 @@ int main(int argc, char* argv[]) {
                     printf(" with arg %s", optarg);
                 printf("\n");
                 break; 
-            case 'w':
-                weight_file = optarg;
-                break;  
             case 'd':
-                dosage_file = optarg; 
-                break;  
-            case 'o': 
-                output_file = optarg; 
-                break;
-            case 'p':
-                p_thresh = std::stod(optarg); 
-                break;
-            default: 
-                std::cout << "enters default and exits \n"; 
-                exit(0);
+                dosages_list = optarg;
+                break; 
+            case 'o':
+                output_dir = optarg;
+                break; 
+            case 'w':
+                weight_list = optarg;
+                break; 
+            case 'r': 
+                run_limit = atoi(optarg);
+                break; 
+            case 'p': 
+                ref_panel = optarg;
                 break;   
-        }
+            default:
+                std::cerr << c << " not a valid argument\n"; 
+                exit(0);
+         }
     }
-    if (weight_file.empty() || dosage_file.empty() || output_file.empty()) 
-    {
-        std::cerr << "Weight, dosage, and output file arguments cannot be empty\n"; 
-        exit(0); 
+    
+    //merge weights from weight-list.txt if not already generated
+    //Populate and merge weights, FIXME: does not account for rivas lab covid19 weights as of yet
+    std::string weight_file;  
+    if (merge_flag) { 
+        if (verbose_flag)
+            std::cout << "Merge_weights running\n";
+        weight_file = merge_traits(weight_list, output_dir, verbose_flag);
     }
-    unsigned int iid_count,pos,var;
-    std::vector<long double> dosages;
-    std::string chr,ea,oa; 
-    try 
-    { 
-        std::cerr << "enters main prs calculation successfully, reading in genotypes from " << dosage_file << " with verbose flag = " << verbose_flag << '\n'; 
-        Genotypes genotypes(dosage_file);
-        std::vector<std::string> indiv_iids;
-        if (verbose_flag)  
-    	    std::cout << "Read in genotypes" << '\n';
-        Weights weights;
-        if (p_thresh == -1.00)   
-            weights.read_weight_file(weight_file);
-        else
-            weights.read_weight_file(weight_file, p_thresh);
-        if (verbose_flag) 
-    	    std::cout << "Read in weight_file" << '\n';
-        std::vector<std::string> samples;
-        genotypes.open(samples);
-        iid_count = genotypes.get_selected_samples().size();
-        Individual_scores scores(weights.num_weights, iid_count);
-        scores.IIDs = genotypes.get_selected_samples();
-        std::cout.flush(); 
-        var = 0; 
-        for(Row w_row : weights.rows){
-            ea = w_row.alt;
-            oa = w_row.ref;
-            chr = w_row.chr;
-            pos = w_row.pos;
+    else { 
+        weight_file = weight_list; //if single weight or pre-merged, set input weight file equal to weight_list variable FIXME : CHECK IF PROPERLY FORMATTED and throw error if not 
+    }
+    
+    if(verbose_flag) 
+        std::cout << "Weight merging finished, weightfile at "  << weight_file << '\n'; 
+    //submit jobs for ancestry-calculation if requested 
+    std::string response, merged_file; 
+    std::string ref_data = "/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/1000genomes.pruned";
+    ref_panel = "/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/1KG-v3.ALL.id-sp.panel"; 
 
-            if(var % 10000 == 0) {
-                std::cout << "Processed " << var << " rows from weight_file" << '\n';
-                std::cout.flush(); 
-            }
-            int it = 0;
-            dosages = genotypes.read_variant(chr,pos,ea,oa);
-            var++;
-            if(dosages.empty()) {
-                continue;
-            }
-            double weight = 0.00;
-            while(it < weights.num_weights){
-                std::vector<long double> prs_vec;
-                weight = w_row.weights[it];
-                if (weight == 0) {
-                    it++;
-                    continue; 
-                }
-                prs_vec = calculate_prs(weight,dosages); 
-                std::transform(scores.scores[it].begin(),scores.scores[it].end(),prs_vec.begin(),scores.scores[it].begin(), std::plus<double>());
-                it++;
-            }
-        }
-       if (verbose_flag)
-            std::cout << "Printing results to " << output_file << '\n'; 
-       populate_ofile(output_file, scores);
+    //submit ancestry jobs as well as prs-calculation jobs
+    response = submit_jobs(dosages_list, weight_file, output_dir, verbose_flag, ref_panel, ref_data, ancestry_flag);
+    if(verbose_flag) { 
+        std::cout << "Submission script finished, jobs  currently running. \ 
+           Check directory " << "" << " for ancestry results.\n Check directory " << "" << " for prs results\n";
     }
-    catch(const char* msg) { 
-        std::cerr << msg << '\n';
-        exit(1);  
-    } 
-}
+} 

@@ -31,11 +31,11 @@ protected:
     int numcol;
     bool is_reading;
     std::vector<std::string> selected_samples;
-    std::vector<std::string> col_names; //fixme, initialize me!
     friend void print_vec(std::vector<std::string> vec);
 public:
     int num_weights;
     std::vector<Row> rows;
+    std::vector<std::string> col_names;
     
     Weights() = default;
     

@@ -1,3 +1,11 @@
+/**
+    CS-11, main.cpp
+    Purpose: Calculate ancestry for sampleset given .eigenvec merged with 1000genomes
+    * Currently only compatible with 1000 genomes reference panel found @ ________
+
+    @author Dakotah Feil
+    @version 1.1 05/01/20 
+*/
 #include <getopt.h>
 #include <iostream> 
 #include "Ancestry.h"
@@ -54,9 +62,12 @@ int main(int argc, char* argv[]) {
                 exit(0);  
         }
     }
+    std::cout << "sample_fn : " << sample_fn << '\n'; 
+    std::cout << "reference_fn : " << reference_fn << '\n';
+    std::cout << "out_fn : " << out_fn << '\n';
     if (sample_fn.empty() || reference_fn.empty() || out_fn.empty() || pcs == 0) 
     {
-        std::cerr << "Weight, dosage, and output file arguments cannot be empty\n"; 
+        std::cerr << "Sample, reference, and output file arguments cannot be empty\n"; 
         exit(0); 
     }
     Ancestry_estimator anc_object(reference_fn, sample_fn, out_fn); 
@@ -64,15 +75,3 @@ int main(int argc, char* argv[]) {
     anc_object.print_ancestry(); 
 }
 
-/*int main() { 
-   //string sample_fn = "/net/hunt/home/kotah/prs-server-beta/ancestry/job-0/MERGED2-PCA-15.eigenvec";
-   //string sample_fn = "/net/hunt/home/kotah/prs-server-beta/ancestry/job-0/MERGED2-PCA-2.eigenvec";
-   string sample_fn = "/net/hunt/home/kotah/prs-server-beta/ancestry/hunt-sample/1kg-chr1-MERGED-2PCA.eigenvec"; 
-   string ref_fn = "/net/hunt/home/kotah/prs-server-beta/1000g/1KG-v3.ALL.id-sp.panel";
-   //string ref_fn = "/net/hunt/home/kotah/prs-server-beta/1000g/1KG-v3.ALL.panel"; 
-   string out_fn = "/net/hunt/home/kotah/prs-server-beta/ancestry/ancestry-tool/chr1-2pcs.txt";
-   int pcs = 2; ; 
-   Ancestry_estimator anc_object(ref_fn, sample_fn, out_fn);
-   anc_object.calculate_centroids(pcs);
-   anc_object.print_ancestry();
-}*/

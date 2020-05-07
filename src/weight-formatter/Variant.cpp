@@ -1,3 +1,10 @@
+/**
+    CS-11, Variant.cpp
+    Purpose: Re-formats variants from different weight files for weight merging compatible with the prs-pipeline. 
+
+    @author Dakotah Feil
+    @version 1.1 05/01/20 
+*/
 #include "Variant.h"
 #include <vector>
 #include <iostream>
@@ -11,7 +18,7 @@ Variant::Variant(int phen_count, std::string snp_id): phenotype_count(phen_count
     this->weights.resize(phenotype_count, 0.0);
 };
 
-void Variant::print_variant(){
+/*void Variant::print_variant(){ //for development purposes only
     int idx = 0;
     std::cout << this->variant_id << '\n';
     std::cout << "WEIGHTS :" << '\n';
@@ -22,7 +29,7 @@ void Variant::print_variant(){
 }
 
 
-void Variant::print_vector(vector<double> vec) {
+void Variant::print_vector(vector<double> vec) { //for development  purposes only 
     if(vec.size() == 0)
         return;
     for(const auto &i:vec) {
@@ -30,7 +37,7 @@ void Variant::print_vector(vector<double> vec) {
     }
     std::cout << '\n';
     return;
-}
+}*/
 
 vector<std::string> Variant::tokenize_variant_id(char delim) {
     std::stringstream ss(this->variant_id);
@@ -39,15 +46,11 @@ vector<std::string> Variant::tokenize_variant_id(char delim) {
     while(getline(ss,val,delim)) {
         id_components.push_back(val);
     }
-    //std::cout << id_components[2] << id_components[3] << '\n';
     return id_components; 
 }
 
 
 void Variant::print_line(std::ofstream &output_file, bool PGS, char delim) {
-    //plink-order SNP    CHR    POS    Allele1    Allele2    BETA    p.value
-    //PGS-order rsID    chr_name    chr_position    effect_allele    reference_allele    effect_weight
-    //necessary-order CHROM    POS    OA    EA    PVALUE    WEIGHT_
     vector<string> id_components;
     id_components = tokenize_variant_id(delim);
     int len = id_components.size();

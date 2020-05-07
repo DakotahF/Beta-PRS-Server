@@ -7,7 +7,12 @@ resultdir=$1
 reference_panel=$2
 reference_data=$3
 
+CURR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+PARENT_DIR="$(dirname "$dir")"
+
 echo $reference_data 
+echo "reference panel"
+echo $reference_panel
 
 script_dir=$(cd `dirname $0` && pwd)
 
@@ -24,4 +29,6 @@ plink2 --bfile $resultdir/MERGED --pca approx 2 --out $resultdir/merged-pcs
 #plink2 --bfile $resultdir/MERGED --pca 2 --out $resultdir/merged-pcs-nona
 echo 'pca (approx 2) finished running'
 
-/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/src/ancestry/a.out --sample $resultdir/merged-pcs.eigenvec --ref $reference_panel --out $resultdir/study-superpops.txt
+$PARENT_DIR/ancestry-calc --sample $resultdir/merged-pcs.eigenvec --ref $reference_panel --out $resultdir/study-superpops.txt --pcs 2
+
+#/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/src/ancestry-calc --sample $resultdir/merged-pcs.eigenvec --ref $reference_panel --out $resultdir/study-superpops.txt

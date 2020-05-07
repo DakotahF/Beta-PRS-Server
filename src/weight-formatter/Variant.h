@@ -14,8 +14,6 @@ public:
     std::string rsid;
     std::vector<double> p_values;
     std::vector<double> weights;
-    //vector<double> p_values(this->phenotype_count, -1.0);
-    //vector<double> weights(this->phenotype_count, 0.0);
     
     //constructor declaration
     Variant() = default;
@@ -23,8 +21,8 @@ public:
     
     //functions
     void update_variant(int index, double p_value, double weight);
-    void print_variant();
-    void print_vector(vector<double> vec);
+    //void print_variant();
+    //void print_vector(vector<double> vec);
     vector<std::string> tokenize_variant_id(char delim = ':');
-    void print_line(std::ofstream &output_file, bool PGS = false, char delim = ':');
+    void print_line(std::ofstream &output_file, bool PGS = false, char delim = ':'); 
 };

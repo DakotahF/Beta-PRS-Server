@@ -1,26 +1,9 @@
 #include <string>
-#include <iostream>
 #include <sstream>
-#include <cassert>
 #include <unordered_map>
 #include <vector>
 #include <tuple>
 #include "Variant.h"
-
-/*class Options
-{
-public:
-    //variables
-    std::string file_path;
-    std::unordered_map<std::string, std::string> weight_dict;
-    bool header; 
-
-    //constructor declaration
-    Options(std::string file_path);
-    //functions
-    void populate_dict();
-};
-*/
 
 using namespace std;
 
@@ -41,7 +24,7 @@ public:
     tuple<std::string, double, double> process_pgs(std::stringstream &ss);
     tuple<std::string, double, double> process_standard(std::stringstream &ss);
     void populate_dict(int phenotype_idx, std::string weight_file, int phenotype_count, int format_type, int verbose_flag);
-    void print_weights(int num_rows = -1);
+    //void print_weights(int num_rows = -1);
     void print_to_output(std::string filename);
 };
 

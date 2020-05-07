@@ -12,7 +12,7 @@ protected :
     int num_ids; //columns
     std::vector<std::string> weights;
 public:
-    std::vector<std::string> IIDs; //temp -- fixme, return with function call
+    std::vector<std::string> IIDs;
     Individual_scores() = default;
     Individual_scores(int num_weights, int num_ids);
     std::vector<std::vector<long double> > scores;

@@ -1,3 +1,17 @@
+/*
+CS-11
+Purpose :
+
+Incorporated weight file formatting : 
+
+plink-order:  SNP    CHR    POS    Allele1    Allele2    BETA    p.value
+------------------------------------------------------------------------
+PGS-order:  rsID    chr_name    chr_position    effect_allele    reference_allele    effect_weight
+---------------------------------------------------------------------------------------------------
+necessary-order: CHROM    POS    OA    EA    PVALUE    WEIGHT_X    WEIGHT_X ... 
+--------------------------------------------------------------------------------
+*these are subject to change with integration of the standardized PGS API (--src--)
+*/
 #include "Options.h"
 #include <vector>
 #include <tuple>
@@ -9,11 +23,10 @@
 #include <string>
 #include <tuple>
 
-using namespace std;
-
+//Helper Functions  
 std::string clean_id(std::string snp_id) {
     if (snp_id.length() <= 0) {
-        std::cout << "Error, snp_id of length 0" << '\n';
+        std::cerr << "Error, snp_id of length 0" << '\n';
         exit(1);
     }
     if(snp_id[0] == 'c')
@@ -21,10 +34,9 @@ std::string clean_id(std::string snp_id) {
     return snp_id;
 }
 
-//Constructor definition
+
 Weight::Weight(std::string o_file): output_file(o_file) {};
 
-//Weight::Weight(std::string w_file): weight_file(w_file) {};
 
 tuple<std::string, double, double> Weight::process_standard(std::stringstream &ss) {
     std::string snp_id, val;
@@ -32,9 +44,6 @@ tuple<std::string, double, double> Weight::process_standard(std::stringstream &s
     int idx = 0;
     while(getline(ss,val,'\t'))
     {
-        //plink-order SNP    CHR    POS    Allele1    Allele2    BETA    p.value
-        //PGS-order rsID    chr_name    chr_position    effect_allele    reference_allele    effect_weight
-        //necessary-order CHROM    POS    OA    EA    PVALUE    WEIGHT_
         switch(idx) {
             case 0: snp_id = clean_id(val); break;
             case 5: weight = stod(val); break;
@@ -93,8 +102,7 @@ void Weight::populate_dict(int phenotype_idx, std::string w_file, int phenotype_
             double p_value, weight;
             std::tuple<std::string, double,double> var_info;
             
-            //check if weight file is formatted for pgs-catalog or standard input
-            //defined in README.md
+            //check if weight file is formatted for pgs-catalog or standard input, format elaborated in README
             if (format_type)
                 var_info = process_pgs(ss);
             else
@@ -104,13 +112,8 @@ void Weight::populate_dict(int phenotype_idx, std::string w_file, int phenotype_
             weight = get<1>(var_info);
             p_value = get<2>(var_info);
             
-            /*if (verbose_flag && format_type) {
-                std::cout << snp_id << '\n';
-                std::cout << weight << '\n';
-                std::cout << p_value << '\n';
-            }*/
             
-            if (snp_id.empty()) //|| weight || !p_value) FIXME, add checks for poorly-formatted weights/p-values
+            if (snp_id.empty()) // FIXME, add more testing/checking for poorly-formatted weights/p-values
                 throw("Weight file " + w_file + " not properly formatted, please see README for proper formatting instructions.");
             if (this->var_weights.find(snp_id) == this->var_weights.end())
             {
@@ -124,7 +127,7 @@ void Weight::populate_dict(int phenotype_idx, std::string w_file, int phenotype_
     }
 }
 
-void Weight::print_weights(int num_rows) {
+/*void Weight::print_weights(int num_rows) { //for development only 
     if(num_rows < 0)
         num_rows = this->var_weights.size(); 
     Variant variant_temp;
@@ -137,12 +140,9 @@ void Weight::print_weights(int num_rows) {
             return;
     }
     return;
-}
+}*/
 
 void Weight::print_to_output(std::string filename) {
-    //plink-order SNP    CHR    POS    Allele1    Allele2    BETA    p.value
-    //PGS-order rsID    chr_name    chr_position    effect_allele    reference_allele    effect_weight
-    //necessary-order CHROM    POS    OA    EA    PVALUE    WEIGHT_
     std::ofstream txt_out;
     txt_out.open(filename);
     if (!txt_out.is_open()) {
@@ -172,7 +172,7 @@ void merge_weights(Weight &merged_weights, std::string phenotype_list, int pheno
     std::string phenotype,phen_location;
     if (phen_list.is_open()) {
         if (verbose_flag)
-            std::cout << "phenotype_list is open (fx->initialize())" << '\n';
+            std::cout << "Iterating through phenotype weights\n";
         std::string line;
         int line_num = 0;
         int format_type = 0;
@@ -185,23 +185,20 @@ void merge_weights(Weight &merged_weights, std::string phenotype_list, int pheno
             std::stringstream ss(line);
             std::string val;
             int idx = 0;
-            while(getline(ss,val,'\t')){ //fixme, code repetition
-                switch(idx) //fixme, reading in whitespace?
+            while(getline(ss,val,'\t')){ 
+                switch(idx) 
                 {
                     case 0: phenotype=val; break;
-                        //case 1: IID=val; break;
                     case 1: phen_location=val; break;
                     case 2: format_type=stoi(val); break;
                     default:
-                        //cassert(formatting);
-                        std::cout << "FIXME, throw formatting error" << '\n';
+                        std::cerr << "Check weight list formatting\n"; //FIXME, improve error catching
                         break; 
                 }
                 idx++;
             }
             if (phenotype.empty() || phen_location.empty())
                 throw("Null phenotype and/or null phenotype weight location found in file. Ensure that values are tab-separated. Check README for more information.");
-            //std::cout << phen_location << '\n';
             try {
                 merged_weights.populate_dict(line_num, phen_location,phenotype_count, format_type, verbose_flag);
                 if (merged_weights.phenotypes.size() < line_num)
