@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/tests/test-prs-tool.cpp
+string
+-
+sstream
+-
+tuple
+-
+iostream
+-
+fstream
+-
+math.h
+-
+
