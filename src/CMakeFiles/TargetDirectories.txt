@@ -1,3 +1,0 @@
-/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/src/CMakeFiles/rebuild_cache.dir
-/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/src/CMakeFiles/edit_cache.dir
-/net/hunt/home/kotah/prs-server-beta/PRS-methods/prs-toolchain/src/CMakeFiles/app.dir
