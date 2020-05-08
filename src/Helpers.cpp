@@ -93,9 +93,9 @@ std::string merge_traits(std::string weight_list, std::string output_dir, int ve
 }
 
 //formats command for ancestry pre-processing 
-std::string prep_ancestry_command(std::string dosage, std::string outputdir) { 
+std::string prep_ancestry_command(std::string dosage, std::string outputdir, std::string ref_dir) { 
     std::string body,command,ukbbsnps;
-    ukbbsnps = "/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/ancestry-snps.ids"; //FIXME, HARDCODED
+    ukbbsnps = ref_dir + "/ancestry-snps.ids"; //FIXME, HARDCODED
     std::string ext = ".vcf.gz";
     std::string inputfile = dosage; 
     std::string name = tokenize(inputfile,'/',-1);
@@ -135,7 +135,7 @@ std::string prep_ancestry_command(std::string dosage, std::string outputdir) {
 }
 
 //submits jobs for ancestry and prs-calculations
-std::string submit_jobs(std::string dosages_list, std::string weight_file, std::string output_dir, int verbose_flag, std::string ref_panel, std::string ref_data, int ancestry_flag, int run_limit) { 
+std::string submit_jobs(std::string dosages_list, std::string weight_file, std::string output_dir, int verbose_flag, std::string ref_panel, std::string ref_data, std::string ref_dir, int ancestry_flag, int run_limit) { 
     std::string resultdir = output_dir + "/results";
     std::string response, dosage, score_file,ext; 
     std::string command;
@@ -157,7 +157,7 @@ std::string submit_jobs(std::string dosages_list, std::string weight_file, std::
     std::string anc_id;
     while(getline(in, dosage)) {
         if (ancestry_flag) {
-            command = prep_ancestry_command(dosage, output_dir);
+            command = prep_ancestry_command(dosage, output_dir, ref_dir);
             response = exec(command);
             anc_id = tokenize(response,' ',-1);
             if(anc_ids.empty() && !anc_id.empty()) 

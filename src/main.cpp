@@ -18,7 +18,7 @@
 //REQUIRES c++11  
 
 int main(int argc, char *argv[]) {
-    std::string dosages_list, weight_list, output_dir, ref_panel; 
+    std::string dosages_list, weight_list, output_dir, ref_panel, ref_dir; 
     int verbose_flag = 0; 
     int merge_flag = 0; 
     int ancestry_flag = 0; 
@@ -35,11 +35,12 @@ int main(int argc, char *argv[]) {
             {"dosages", required_argument, 0, 'd'}, //requires dosage_list.txt
             {"output", required_argument, 0, 'o'},
             {"weights", required_argument, 0, 'w'}, 
-            {"run_limit", required_argument, 0, 'r'},
-            {"ref_panel",  required_argument, 0, 'p'}
+            {"runlimit", required_argument, 0, 'r'},
+            {"refpanel",  required_argument, 0, 'p'},
+            {"refdir", required_argument, 0, 'f'}
         };
         int option_index = 0; 
-        c  = getopt_long(argc, argv, "d:o:w:r:p:", long_options, &option_index);
+        c  = getopt_long(argc, argv, "d:o:w:r:p:f:", long_options, &option_index);
         if (c == -1)
             break;
         switch(c)
@@ -66,7 +67,10 @@ int main(int argc, char *argv[]) {
                 break; 
             case 'p': 
                 ref_panel = optarg;
-                break;   
+                break;
+            case 'f': 
+                ref_dir = optarg;
+                break; 
             default:
                 std::cerr << c << " not a valid argument\n"; 
                 exit(0);
@@ -89,11 +93,11 @@ int main(int argc, char *argv[]) {
         std::cout << "Weight merging finished, weightfile at "  << weight_file << '\n'; 
     //submit jobs for ancestry-calculation if requested 
     std::string response, merged_file; 
-    std::string ref_data = "/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/1000genomes.pruned";
-    ref_panel = "/net/hunt/home/kotah/prs-server-beta/ancestry/cran/reference/1KG-v3.ALL.id-sp.panel"; 
+    std::string ref_data = ref_dir + "/1000genomes.pruned";
+    ref_panel = ref_dir + "/1KG-v3.ALL.id-sp.panel"; 
 
     //submit ancestry jobs as well as prs-calculation jobs
-    response = submit_jobs(dosages_list, weight_file, output_dir, verbose_flag, ref_panel, ref_data, ancestry_flag);
+    response = submit_jobs(dosages_list, weight_file, output_dir, verbose_flag, ref_panel, ref_data, ref_dir, ancestry_flag);
     if(verbose_flag) { 
         std::cout << "Submission script finished, jobs  currently running. \ 
            Check directory " << "" << " for ancestry results.\n Check directory " << "" << " for prs results\n";
