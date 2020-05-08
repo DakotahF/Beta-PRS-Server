@@ -16,7 +16,7 @@ With merging weights (requires list of weights to merge in place of weight file)
 
     ./prs-runner --verbose --dosages dosages_list.txt --output /path/to/desired_output_dir/  --weights weight-list.txt --ancestry —-ref_dir /path/to/reference-data --merge
 
-###flags : 
+Flags : 
 
     --weights, -w : required argument, either pre-merged/singular weight file or list of weights to be merged (format of weight list described below), merging feature must be activated by attaching --merge flag 
     --dosages, -d : required argument, list of dosages to use for PRS calculation
@@ -36,9 +36,10 @@ CHROM	POS	OA	EA	PVALUE	WEIGHT_X175	WEIGHT_X614.5...
 22	29392	G	A 	0.0	0.0	0.0 ...
 
 #### If using merge-weights feature : 
-phen    phen_loc        format_type
 
-PGS000018       /path/to/weightfile/1/PGS000018.txt  1x994.2  /path/to/weightfile/2/PheCode_X994.2_SAIGE_b38_5e-2_clumped_r2_0.2.clumped 0
+##### phen    phen_loc        format_type
+
+##### PGS000018       /path/to/weightfile/1/PGS000018.txt  1x994.2  /path/to/weightfile/2/PheCode_X994.2_SAIGE_b38_5e-2_clumped_r2_0.2.clumped 0
 
 *In the second situation,  the format type is indicative of whether the weights are hosted on our cluster (0) or being pulled from the PGS catalog (1). The PGS catalog was recently finalized, so we will soon be integrating API calls instead. 
 
