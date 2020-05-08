@@ -4,11 +4,9 @@
 
 This program is based off of existing code from Daniel Taliun using stat-gen's savvy module(original R package located at : https://github.com/statgen/Rprs)
 
-The PRS pipeline takes in a list of weights to merge as well as a list of dosages on which to calculate PRS. An optional flag for rough ancestry estimation is available to ensure the end-user is aware of which individual's risk scores may be based on a population different to their own. 
+The PRS pipeline takes in a list of weights to merge as well as a list of dosages to use for polygenic risk score (PRS) calculation. An optional flag for rough ancestry estimation is available to identify individuals whose ancestry does is not well reflected in the reference population. 
 
 ## Running the Program
-
-Sample command to run program : 
 
 Without merging weights (pre-merged or singular weight file) : 
 
@@ -18,7 +16,8 @@ With merging weights (requires list of weights to merge in place of weight file)
 
     ./prs-runner --verbose --dosages dosages_list.txt --output /path/to/desired_output_dir/  --weights weight-list.txt --ancestry —-ref_dir /path/to/reference-data --merge
 
-flags : 
+###flags : 
+
     --weights, -w : required argument, either pre-merged/singular weight file or list of weights to be merged (format of weight list described below), merging feature must be activated by attaching --merge flag 
     --dosages, -d : required argument, list of dosages to use for PRS calculation
     --output : required argument, output directory where results will be stored 
@@ -32,23 +31,24 @@ flags :
 ### Weightfile Formatting
 
 #### If not using merge-weights feature : 
-CHROM	POS	OA	EA	PVALUE	WEIGHT_X175	WEIGHT_X614.5...
-22	29392	G	A 	0.0	0.0	0.0 ...
+#####CHROM	POS	OA	EA	PVALUE	WEIGHT_X175	WEIGHT_X614.5...
+#####22	29392	G	A 	0.0	0.0	0.0 ...
 
-#### IF using merge-weights feature : 
-phen    phen_loc        format_type
-PGS000018       /path/to/weightfile/1/PGS000018.txt  1
-x994.2  /path/to/weightfile/2/PheCode_X994.2_SAIGE_b38_5e-2_clumped_r2_0.2.clumped 0
+#### If using merge-weights feature : 
+#####phen    phen_loc        format_type
+#####PGS000018       /path/to/weightfile/1/PGS000018.txt  1x994.2  /path/to/weightfile/2/PheCode_X994.2_SAIGE_b38_5e-2_clumped_r2_0.2.clumped 0
 
 *In the second situation,  the format type is indicative of whether the weights are hosted on our cluster (0) or being pulled from the PGS catalog (1). The PGS catalog was recently finalized, so we will soon be integrating API calls instead. 
 
 ### Dosages list Formatting
 
-dosagelist.txt should have the following formatting : 
+####dosagelist.txt should have the following formatting : 
 
-/path/to/chr1.vcf.gz 
-/path/to/chr2.vcf.gz
-...
+####/path/to/chr1.vcf.gz 
+
+####/path/to/chr2.vcf.gz
+
+####...
 
 ## Output
  
