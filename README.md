@@ -31,24 +31,26 @@ With merging weights (requires list of weights to merge in place of weight file)
 ### Weightfile Formatting
 
 #### If not using merge-weights feature : 
-#####CHROM	POS	OA	EA	PVALUE	WEIGHT_X175	WEIGHT_X614.5...
-#####22	29392	G	A 	0.0	0.0	0.0 ...
+CHROM	POS	OA	EA	PVALUE	WEIGHT_X175	WEIGHT_X614.5...
+
+22	29392	G	A 	0.0	0.0	0.0 ...
 
 #### If using merge-weights feature : 
-#####phen    phen_loc        format_type
-#####PGS000018       /path/to/weightfile/1/PGS000018.txt  1x994.2  /path/to/weightfile/2/PheCode_X994.2_SAIGE_b38_5e-2_clumped_r2_0.2.clumped 0
+phen    phen_loc        format_type
+
+PGS000018       /path/to/weightfile/1/PGS000018.txt  1x994.2  /path/to/weightfile/2/PheCode_X994.2_SAIGE_b38_5e-2_clumped_r2_0.2.clumped 0
 
 *In the second situation,  the format type is indicative of whether the weights are hosted on our cluster (0) or being pulled from the PGS catalog (1). The PGS catalog was recently finalized, so we will soon be integrating API calls instead. 
 
 ### Dosages list Formatting
 
-####dosagelist.txt should have the following formatting : 
+dosagelist.txt should have the following formatting : 
 
-####/path/to/chr1.vcf.gz 
+/path/to/chr1.vcf.gz 
 
-####/path/to/chr2.vcf.gz
+/path/to/chr2.vcf.gz
 
-####...
+...
 
 ## Output
  
